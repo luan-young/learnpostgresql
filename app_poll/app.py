@@ -1,6 +1,6 @@
 import random
 from typing import List
-from connections import create_connection
+from connections import pool
 from models.poll import Poll
 from models.option import Option
 import database
@@ -90,7 +90,7 @@ def randomize_poll_winner():
     if not option:
         print("Invalid option.")
         return
-        
+
     votes = option.votes
     winner = random.choice(votes)
     if winner:
@@ -109,8 +109,9 @@ MENU_OPTIONS = {
 
 def menu():
 
-    connection = create_connection()
+    connection = pool.getconn()
     database.create_tables(connection)
+    pool.putconn(connection)
 
     while (selection := input(MENU_PROMPT)) != "6":
         try:
