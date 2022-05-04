@@ -1,4 +1,5 @@
 from typing import List, Tuple
+from contextlib import contextmanager
 from psycopg2.extras import execute_values
 
 Poll = Tuple[int, str, str]
@@ -45,73 +46,71 @@ INSERT_POLL_RETURN_ID = "INSERT INTO polls (title, owner_username) VALUES (%s, %
 INSERT_OPTION_RETURN_ID = "INSERT INTO options (option_text, poll_id) VALUES (%s, %s) RETURNING id;"
 INSERT_VOTE = "INSERT INTO votes (username, option_id) VALUES (%s, %s);"
 
+
+@contextmanager
+def get_cursor(connection):
+    with connection:
+        with connection.cursor() as cursor:
+            yield cursor
+
+
 def create_tables(conn):
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(CREATE_POLLS)
-            cur.execute(CREATE_OPTIONS)
-            cur.execute(CREATE_VOTES)
+    with get_cursor(conn) as cur:
+        cur.execute(CREATE_POLLS)
+        cur.execute(CREATE_OPTIONS)
+        cur.execute(CREATE_VOTES)
 
 
 def create_poll(conn, title: str, owner: str):
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(INSERT_POLL_RETURN_ID, (title, owner))
-            poll_id = cur.fetchone()[0]
-            return poll_id
+    with get_cursor(conn) as cur:
+        cur.execute(INSERT_POLL_RETURN_ID, (title, owner))
+        poll_id = cur.fetchone()[0]
+        return poll_id
 
 
 def get_polls(conn) -> List[Poll]:
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(SELECT_ALL_POLLS)
-            return cur.fetchall()
+    with get_cursor(conn) as cur:
+        cur.execute(SELECT_ALL_POLLS)
+        return cur.fetchall()
 
 
 def get_poll(conn, poll_id: int) -> Poll:
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(SELECT_POLL, (poll_id,))
-            return cur.fetchone()
+    with get_cursor(conn) as cur:
+        cur.execute(SELECT_POLL, (poll_id,))
+        return cur.fetchone()
 
 
 def get_latest_poll(conn) -> Poll:
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(SELECT_LATEST_POLL)
-            return cur.fetchone()
+    with get_cursor(conn) as cur:
+        cur.execute(SELECT_LATEST_POLL)
+        return cur.fetchone()
 
 
 def get_poll_options(conn, poll_id: int) -> List[Option]:
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(SELECT_POLL_OPTIONS, (poll_id,))
-            return cur.fetchall()
+    with get_cursor(conn) as cur:
+        cur.execute(SELECT_POLL_OPTIONS, (poll_id,))
+        return cur.fetchall()
 
 
 def get_option(conn, option_id: int) -> Option:
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(SELECT_OPTION, (option_id,))
-            return cur.fetchone()
+    with get_cursor(conn) as cur:
+        cur.execute(SELECT_OPTION, (option_id,))
+        return cur.fetchone()
 
 
 def add_option(conn, option_text: str, poll_id: int):
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(INSERT_OPTION_RETURN_ID, (option_text, poll_id))
-            option_id = cur.fetchone()[0]
-            return option_id
+    with get_cursor(conn) as cur:
+        cur.execute(INSERT_OPTION_RETURN_ID, (option_text, poll_id))
+        option_id = cur.fetchone()[0]
+        return option_id
 
 
 def get_votes_for_option(conn, option_id: int) -> List[Vote]:
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(SELECT_VOTES_FOR_OPTION, (option_id,))
-            return cur.fetchall()
+    with get_cursor(conn) as cur:
+        cur.execute(SELECT_VOTES_FOR_OPTION, (option_id,))
+        return cur.fetchall()
 
 
 def add_poll_vote(conn, username: str, option_id: int):
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(INSERT_VOTE, (username, option_id))
+    with get_cursor(conn) as cur:
+        cur.execute(INSERT_VOTE, (username, option_id))
